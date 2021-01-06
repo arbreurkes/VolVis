@@ -149,12 +149,13 @@ float Volume::linearInterpolate(float g0, float g1, float factor)
 float Volume::weight(float x)
 {
     float a = -0.75f;
-    double absX = fabs(x);
-    if (absX > 0.0 && absX < 1.0) {
-        return (a + 2) * pow(absX, 3) - (a + 3) * pow(absX, 2) + 1.0f;
-    } else if (absX >= 1.0 && absX < 2) {
-        return a * pow(absX, 3) - 5 * a * pow(absX, 2) + 8 * a * absX - 4 * a;
-    } else if (absX >= 2) {
+    float absX = fabs(x);
+
+    if (absX > 0.0f && absX < 1.0f) {
+        return (a + 2.0) * powf(absX, 3.0) - (a + 3.0) * powf(absX, 2.0) + 1.0;
+    } else if (absX >= 1.0 && absX < 2.0) {
+        return a * powf(absX, 3.0f) - 5.0 * a * powf(absX, 2.0) + 8.0 * a * absX - 4.0 * a;
+    } else if (absX >= 2.0f) {
         return 0.0f;
     }
     return -1.0f;
@@ -164,20 +165,62 @@ float Volume::weight(float x)
 // This functions returns the results of a cubic interpolation using 4 values and a factor
 float Volume::cubicInterpolate(float g0, float g1, float g2, float g3, float factor)
 {
-    return 0.0f;
+    float toret = 0.0f;
+    toret += g0 * weight(-factor - 1);
+    toret += g1 * weight(-factor);
+    toret += g2 * weight(1 - factor);
+    toret += g3 * weight(2 - factor);
+
+    return toret;
 }
 
 // ======= TODO : IMPLEMENT ========
 // This function returns the value of a bicubic interpolation
 float Volume::bicubicInterpolateXY(const glm::vec2& xyCoord, int z) const
 {
-    return 0.0f;
+
+    // Get the x, y, z values as ints
+    const int x = static_cast<int>(xyCoord.x);
+    const int y = static_cast<int>(xyCoord.y);
+    // Get the offsets
+    const float fac_x = xyCoord.x - float(x);
+    const float fac_y = xyCoord.y - float(y);
+
+    float arr[4];
+    arr[0] = cubicInterpolate(getVoxel(x - 2, y - 2, z), getVoxel(x - 2, y - 1, z), getVoxel(x - 2, y, z), getVoxel(x - 2, y + 1, z), fac_y);
+    arr[1] = cubicInterpolate(getVoxel(x - 1, y - 2, z), getVoxel(x - 1, y - 1, z), getVoxel(x - 1, y, z), getVoxel(x - 1, y + 1, z), fac_y);
+    arr[2] = cubicInterpolate(getVoxel(x, y - 2, z), getVoxel(x, y - 1, z), getVoxel(x, y, z), getVoxel(x, y + 1, z), fac_y);
+    arr[3] = cubicInterpolate(getVoxel(x + 1, y - 2, z), getVoxel(x + 1, y - 1, z), getVoxel(x + 1, y, z), getVoxel(x + 1, y + 1, z), fac_y);
+
+    return cubicInterpolate(arr[0], arr[1], arr[2], arr[3], fac_x);
 }
 
 // ======= TODO : IMPLEMENT ========
 // This function computes the tricubic interpolation at coord
 float Volume::getVoxelTriCubicInterpolate(const glm::vec3& coord) const
 {
+    // Get the x, y, z values as ints
+    const int x = static_cast<int>(coord.x);
+    const int y = static_cast<int>(coord.y);
+    const int z = static_cast<int>(coord.z);
+
+    // Get the offsets
+    const float fac_x = coord.x - float(x);
+    const float fac_y = coord.y - float(y);
+    const float fac_z = coord.z - float(z);
+
+    glm::vec2 vec0 = glm::vec2(coord.x, coord.y);
+    glm::vec2 vec1 = glm::vec2(coord.x, coord.y);
+    glm::vec2 vec2 = glm::vec2(coord.x, coord.y);
+    glm::vec2 vec3 = glm::vec2(coord.x, coord.y);
+
+    float arr[4];
+    arr[0] = bicubicInterpolateXY(vec0, fac_z);
+    arr[1] = bicubicInterpolateXY(vec1, fac_z);
+    arr[2] = bicubicInterpolateXY(vec2, fac_z);
+    arr[3] = bicubicInterpolateXY(vec3, fac_z);
+
+    // return bicubicInterpolateXY(vec, 0);
     return 0.0f;
 }
 
