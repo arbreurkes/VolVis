@@ -148,7 +148,16 @@ float Volume::linearInterpolate(float g0, float g1, float factor)
 // This function represents the h(x) function, which returns the weight of the cubic interpolation kernel for a given position x
 float Volume::weight(float x)
 {
-    return 0.0f;
+    float a = -0.75f;
+    double absX = fabs(x);
+    if (absX > 0.0 && absX < 1.0) {
+        return (a + 2) * pow(absX, 3) - (a + 3) * pow(absX, 2) + 1.0f;
+    } else if (absX >= 1.0 && absX < 2) {
+        return a * pow(absX, 3) - 5 * a * pow(absX, 2) + 8 * a * absX - 4 * a;
+    } else if (absX >= 2) {
+        return 0.0f;
+    }
+    return -1.0f;
 }
 
 // ======= TODO : IMPLEMENT ========
