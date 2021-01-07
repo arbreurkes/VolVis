@@ -187,10 +187,10 @@ float Volume::bicubicInterpolateXY(const glm::vec2& xyCoord, int z) const
     const float fac_y = xyCoord.y - float(y);
 
     float arr[4];
-    arr[0] = cubicInterpolate(getVoxel(x - 2, y - 2, z), getVoxel(x - 1, y - 2, z), getVoxel(x + 0, y - 2, z), getVoxel(x + 1, y - 2, z), fac_x);
-    arr[1] = cubicInterpolate(getVoxel(x - 2, y - 1, z), getVoxel(x - 1, y - 1, z), getVoxel(x + 0, y - 1, z), getVoxel(x + 1, y - 1, z), fac_x);
-    arr[2] = cubicInterpolate(getVoxel(x - 2, y - 0, z), getVoxel(x - 1, y - 0, z), getVoxel(x + 0, y - 0, z), getVoxel(x + 1, y - 0, z), fac_x);
-    arr[3] = cubicInterpolate(getVoxel(x - 2, y + 1, z), getVoxel(x - 1, y + 1, z), getVoxel(x + 0, y + 1, z), getVoxel(x + 1, y + 1, z), fac_x);
+    arr[0] = cubicInterpolate(getVoxel(x - 1, y - 1, z), getVoxel(x - 0, y - 1, z), getVoxel(x + 1, y - 1, z), getVoxel(x + 2, y - 1, z), fac_x);
+    arr[1] = cubicInterpolate(getVoxel(x - 1, y - 0, z), getVoxel(x - 0, y - 0, z), getVoxel(x + 1, y - 0, z), getVoxel(x + 2, y - 0, z), fac_x);
+    arr[2] = cubicInterpolate(getVoxel(x - 1, y + 1, z), getVoxel(x - 0, y + 1, z), getVoxel(x + 1, y + 1, z), getVoxel(x + 2, y + 1, z), fac_x);
+    arr[3] = cubicInterpolate(getVoxel(x - 1, y + 2, z), getVoxel(x - 0, y + 2, z), getVoxel(x + 1, y + 2, z), getVoxel(x + 2, y + 2, z), fac_x);
 
     return cubicInterpolate(arr[0], arr[1], arr[2], arr[3], fac_y);
 }
@@ -211,10 +211,10 @@ float Volume::getVoxelTriCubicInterpolate(const glm::vec3& coord) const
     // glm::vec2 vec3 = glm::vec2(coord.x + 1, coord.y);
 
     float arr[4];
-    arr[0] = bicubicInterpolateXY(vec0, z - 2);
-    arr[1] = bicubicInterpolateXY(vec0, z - 1);
-    arr[2] = bicubicInterpolateXY(vec0, z + 0);
-    arr[3] = bicubicInterpolateXY(vec0, z + 1);
+    arr[0] = bicubicInterpolateXY(vec0, z - 1);
+    arr[1] = bicubicInterpolateXY(vec0, z - 0);
+    arr[2] = bicubicInterpolateXY(vec0, z + 1);
+    arr[3] = bicubicInterpolateXY(vec0, z + 2);
 
     return std::max(cubicInterpolate(arr[0], arr[1], arr[2], arr[3], fac_z), 0.0f);
 }
