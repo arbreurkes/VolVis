@@ -198,6 +198,9 @@ float Volume::bicubicInterpolateXY(const glm::vec2& xyCoord, int z) const
 // This function computes the tricubic interpolation at coord
 float Volume::getVoxelTriCubicInterpolate(const glm::vec3& coord) const
 {
+    if (glm::any(glm::lessThan(coord, glm::vec3(0))) || glm::any(glm::greaterThanEqual(coord, glm::vec3(m_dim - 1))))
+        return 0.0f;
+
     // Get the x, y, z values as ints
     const int z = static_cast<int>(coord.z);
 
@@ -205,9 +208,6 @@ float Volume::getVoxelTriCubicInterpolate(const glm::vec3& coord) const
     const float fac_z = coord.z - float(z);
 
     glm::vec2 vec0 = glm::vec2(coord.x, coord.y);
-    // glm::vec2 vec1 = glm::vec2(coord.x - 1, coord.y);
-    // glm::vec2 vec2 = glm::vec2(coord.x - 0, coord.y);
-    // glm::vec2 vec3 = glm::vec2(coord.x + 1, coord.y);
 
     float arr[4];
     arr[0] = bicubicInterpolateXY(vec0, z - 1);
