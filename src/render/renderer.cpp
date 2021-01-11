@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "render_config.h" // added for traceRayISO function
 #include <algorithm>
 #include <algorithm> // std::fill
 #include <cmath>
@@ -9,7 +10,6 @@
 #include <tbb/blocked_range2d.h>
 #include <tbb/parallel_for.h>
 #include <tuple>
-#include "render_config.h" // added for traceRayISO function
 
 namespace render {
 
@@ -182,28 +182,22 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
     float maxVal = 0.0f;
 
     //Volume Shading Disabled:
-    if (!volumeShading) {
-        // Loop through every values of the ray every sampleStep and find the max
-        glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
-        const glm::vec3 increment = sampleStep * ray.direction;
-        for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
-            const float val = m_pVolume->getVoxelInterpolate(samplePos);
-            maxVal = std::max(val, maxVal);
 
-            if(maxVal > 2.0f) { //2.0f should be a variable..
-                return glm::vec4(isoColor, 1.0f);
-            } 
+    // Loop through every values of the ray every sampleStep and find the max
+    glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
+    const glm::vec3 increment = sampleStep * ray.direction;
+    for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
+        const float val = m_pVolume->getVoxelInterpolate(samplePos);
+        maxVal = std::max(val, maxVal);
+        if (maxVal > 95.0f) { //95.0f Change this to the var.
+            return glm::vec4(isoColor, 1.0f);
         }
+    }
 
     // Not sure what to return here.
     return glm::vec4(otherIso, 0.0f);
-    }
     //Volume Shading Enabled:
-    else{
-        // Return Phong-Shaded color
-    }
 }
-
 
 // ======= TODO: IMPLEMENT ========
 // Given that the iso value lies somewhere between t0 and t1, find a t for which the value
@@ -212,16 +206,16 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
 float Renderer::bisectionAccuracy(const Ray& ray, float t0, float t1, float isoValue) const
 {
     //Declarations
-    float sampleStep=0.001f;
+    float sampleStep = 0.001f;
     float minVal = 0.0f;
 
     glm::vec3 samplePos = ray.origin + t0 * ray.direction;
     const glm::vec3 increment = sampleStep * ray.direction;
 
     for (float t = t0; t <= t1; t += sampleStep, samplePos += increment) {
-        const float val = abs(m_pVolume->getVoxelInterpolate(samplePos)-isoValue);
+        const float val = abs(m_pVolume->getVoxelInterpolate(samplePos) - isoValue);
         minVal = std::min(val, minVal);
-        } 
+    }
     //return the t corresponding to the minVal
 }
 
@@ -260,7 +254,7 @@ glm::vec4 Renderer::getTFValue(float val) const
 {
     // Map value from [m_config.tfColorMapIndexStart, m_config.tfColorMapIndexStart + m_config.tfColorMapIndexRange) to [0, 1) .
     const float range01 = (val - m_config.tfColorMapIndexStart) / m_config.tfColorMapIndexRange;
-    const size_t i = std::min(static_cast<size_t>(range01 * static_cast<float>(m_config.tfColorMap.size())), m_config.tfColorMap.size()-1);
+    const size_t i = std::min(static_cast<size_t>(range01 * static_cast<float>(m_config.tfColorMap.size())), m_config.tfColorMap.size() - 1);
     return m_config.tfColorMap[i];
 }
 
