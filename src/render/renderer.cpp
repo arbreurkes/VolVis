@@ -10,6 +10,7 @@
 #include <tbb/blocked_range2d.h>
 #include <tbb/parallel_for.h>
 #include <tuple>
+#include "render_config.h" // added for traceRayISO function
 
 namespace render {
 
@@ -189,7 +190,8 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
     for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
         const float val = m_pVolume->getVoxelInterpolate(samplePos);
         maxVal = std::max(val, maxVal);
-        if (maxVal > 95.0f) { //95.0f Change this to the var.
+        
+        if (maxVal > m_config.isoValue) { //95.0f Change this to the var.
             return glm::vec4(isoColor, 1.0f);
         }
     }
