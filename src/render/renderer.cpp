@@ -9,6 +9,7 @@
 #include <tbb/blocked_range2d.h>
 #include <tbb/parallel_for.h>
 #include <tuple>
+#include "render_config.h" // added for traceRayISO function
 
 namespace render {
 
@@ -172,12 +173,37 @@ glm::vec4 Renderer::traceRayMIP(const Ray& ray, float sampleStep) const
 // If volume shading is DISABLED then simply return the isoColor.
 // If volume shading is ENABLED then return the phong-shaded color at that location using the local gradient (from m_pGradientVolume).
 //   Use the camera position (m_pCamera->position()) as the light position.
-// Use the bisectionAccuracy function (to be implemented) to get a more precise isosurface location between two steps.
+//   LATER: Use the bisectionAccuracy function (to be implemented) to get a more precise isosurface location between two steps.
 glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
 {
-    static constexpr glm::vec3 isoColor { 0.8f, 0.8f, 0.2f };
-    return glm::vec4(isoColor, 1.0f);
+    // Declarations
+    static constexpr glm::vec3 isoColor { 0.8f, 0.8f, 0.2f }; //Yellow
+    static constexpr glm::vec3 otherIso { 0.0f, 0.0f, 0.0f }; //Black
+    float maxVal = 0.0f;
+
+    //Volume Shading Disabled:
+    if (!volumeShading) {
+        // Loop through every values of the ray every sampleStep and find the max
+        glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
+        const glm::vec3 increment = sampleStep * ray.direction;
+        for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
+            const float val = m_pVolume->getVoxelInterpolate(samplePos);
+            maxVal = std::max(val, maxVal);
+
+            if(maxVal > 2.0f) { //2.0f should be a variable..
+                return glm::vec4(isoColor, 1.0f);
+            } 
+        }
+
+    // Not sure what to return here.
+    return glm::vec4(otherIso, 0.0f);
+    }
+    //Volume Shading Enabled:
+    else{
+        // Return Phong-Shaded color
+    }
 }
+
 
 // ======= TODO: IMPLEMENT ========
 // Given that the iso value lies somewhere between t0 and t1, find a t for which the value
@@ -185,7 +211,18 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
 // iterations such that it does not get stuck in degerate cases.
 float Renderer::bisectionAccuracy(const Ray& ray, float t0, float t1, float isoValue) const
 {
-    return 0.0f;
+    //Declarations
+    float sampleStep=0.001f;
+    float minVal = 0.0f;
+
+    glm::vec3 samplePos = ray.origin + t0 * ray.direction;
+    const glm::vec3 increment = sampleStep * ray.direction;
+
+    for (float t = t0; t <= t1; t += sampleStep, samplePos += increment) {
+        const float val = abs(m_pVolume->getVoxelInterpolate(samplePos)-isoValue);
+        minVal = std::min(val, minVal);
+        } 
+    //return the t corresponding to the minVal
 }
 
 // ======= TODO: IMPLEMENT ========
