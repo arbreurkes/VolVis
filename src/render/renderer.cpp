@@ -220,13 +220,41 @@ float Renderer::bisectionAccuracy(const Ray& ray, float t0, float t1, float isoV
     }
     //return the t corresponding to the minVal
 }
-
+float a(float val, float delta) {
+    return 1 - exp(-val*delta);
+}
 // ======= TODO: IMPLEMENT ========
 // In this function, implement 1D transfer function raycasting.
 // Use getTFValue to compute the color for a given volume value according to the 1D transfer function.
 glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
 {
-    return glm::vec4(0.0f);
+    float absorption = 1.0f;
+
+    glm::vec4 color = {0.0f, 0.0f, 0.0f, 0.0f};
+
+    // Incrementing samplePos directly instead of recomputing it each frame gives a measureable speed-up.
+    glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
+    const glm::vec3 increment = sampleStep * ray.direction;
+    for (float t = ray.tmax; t >= ray.tmin; t -= sampleStep, samplePos -= increment) {
+        const float val = m_pVolume->getVoxelInterpolate(samplePos);
+
+        absorption = absorption * (1- a(val, sampleStep));
+        // color = color + getTFValue(val)*absorption;
+        color = getTFValue(val) + ( 1 - absorption)*color;
+    }
+    // getTFValue
+    // Normalize the result to a range of [0 to mpVolume->maximum()].
+    return color;
+    // return glm::vec4(0.0f);
+}
+
+
+float absorption(float i, float delta, float *values) {
+    float val = 1.0f;
+    for (int i = 0; i < sizeof(values)/sizeof(values[0]); i++) {
+        val = val * (1.0f - a(values[i], delta));
+    }
+    return val;
 }
 
 // ======= TODO: IMPLEMENT ========
