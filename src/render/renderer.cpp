@@ -182,12 +182,6 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
     static constexpr glm::vec3 otherIso { 0.0f, 0.0f, 0.0f }; //Black
     float maxVal = 0.0f;
 
-    //Volume Shading Enabled:
-    if (m_config.volumeShading) {
-        return glm::vec4(otherIso, 0.0f);
-    }
-
-    //Volume Shading Disabled:
     // Loop through every values of the ray every sampleStep and find the max
     glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
     const glm::vec3 increment = sampleStep * ray.direction;
@@ -196,6 +190,13 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
         maxVal = std::max(val, maxVal);
         
         if (maxVal > m_config.isoValue) {
+            //Volume Shading Enabled:
+            if (m_config.volumeShading) {
+                volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
+                return glm::vec4(computePhongShading(isoColor, gradient, m_pCamera->position(), ray.direction), 1.0f);
+            }
+
+            //Volume Shading Disabled:
             return glm::vec4(isoColor, 1.0f);
         }
     }
@@ -277,7 +278,14 @@ glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
 // You are free to choose any specular power that you'd like.
 glm::vec3 Renderer::computePhongShading(const glm::vec3& color, const volume::GradientVoxel& gradient, const glm::vec3& L, const glm::vec3& V)
 {
-    return glm::vec3(0.0f);
+    // Surface properties.
+    const glm::vec4 K { 0.1, 0.7, 0.2, 100};
+    // Ambient vector.
+    const glm::vec3 ambient = color * K[0];
+    // Diffuse vector.
+    const glm::vec3 diffuse = color * K[1] * glm::dot(glm::normalize(gradient.dir), glm::normalize(L));
+
+    return ambient + diffuse;
 }
 
 // ======= DO NOT MODIFY THIS FUNCTION ========
