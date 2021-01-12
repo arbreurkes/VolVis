@@ -115,6 +115,26 @@ GradientVoxel GradientVolume::getGradientVoxelNN(const glm::vec3& coord) const
 // Use the linearInterpolate function that you implemented below.
 GradientVoxel GradientVolume::getGradientVoxelLinearInterpolate(const glm::vec3& coord) const
 {
+    if (glm::any(glm::lessThan(coord, glm::vec3(0))) || glm::any(glm::greaterThanEqual(coord, glm::vec3(m_dim))))
+        return { glm::vec3(0.0f), 0.0f };
+
+    const int x = static_cast<int>(coord.x);
+    const int y = static_cast<int>(coord.y);
+    const int z = static_cast<int>(coord.z);
+
+    const float fac_x = coord.x - float(x);
+    const float fac_y = coord.y - float(y);
+    const float fac_z = coord.z - float(z);
+
+    const GradientVoxel t0 = linearInterpolate(getGradientVoxel(x, y, z), getGradientVoxel(x + 1, y, z), fac_x);
+    const GradientVoxel t1 = linearInterpolate(getGradientVoxel(x, y + 1, z), getGradientVoxel(x + 1, y + 1, z), fac_x);
+    const GradientVoxel t2 = linearInterpolate(getGradientVoxel(x, y, z + 1), getGradientVoxel(x + 1, y, z + 1), fac_x);
+    const GradientVoxel t3 = linearInterpolate(getGradientVoxel(x, y + 1, z + 1), getGradientVoxel(x + 1, y + 1, z + 1), fac_x);
+    const GradientVoxel t4 = linearInterpolate(t0, t1, fac_y);
+    const GradientVoxel t5 = linearInterpolate(t2, t3, fac_y);
+    const GradientVoxel t6 = linearInterpolate(t4, t5, fac_z);
+    return t6;
+
     return GradientVoxel {};
 }
 
@@ -123,7 +143,11 @@ GradientVoxel GradientVolume::getGradientVoxelLinearInterpolate(const glm::vec3&
 // At t=0, linearInterpolate should return g0 and at t=1 it returns g1.
 GradientVoxel GradientVolume::linearInterpolate(const GradientVoxel& g0, const GradientVoxel& g1, float factor)
 {
-    return GradientVoxel {};
+    const int x = (1 - factor) * g0.dir.x + factor * g1.dir.x;
+    const int y = (1 - factor) * g0.dir.y + factor * g1.dir.y;
+    const int z = (1 - factor) * g0.dir.z + factor * g1.dir.z;
+
+    return getGradientVoxel(x, y, z);
 }
 
 // This function returns a gradientVoxel without using interpolation
