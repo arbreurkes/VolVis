@@ -182,8 +182,12 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
     static constexpr glm::vec3 otherIso { 0.0f, 0.0f, 0.0f }; //Black
     float maxVal = 0.0f;
 
-    //Volume Shading Disabled:
+    //Volume Shading Enabled:
+    if (m_config.volumeShading) {
+        return glm::vec4(otherIso, 0.0f);
+    }
 
+    //Volume Shading Disabled:
     // Loop through every values of the ray every sampleStep and find the max
     glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
     const glm::vec3 increment = sampleStep * ray.direction;
@@ -191,14 +195,13 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
         const float val = m_pVolume->getVoxelInterpolate(samplePos);
         maxVal = std::max(val, maxVal);
         
-        if (maxVal > m_config.isoValue) { //95.0f Change this to the var.
+        if (maxVal > m_config.isoValue) {
             return glm::vec4(isoColor, 1.0f);
         }
     }
 
-    // Not sure what to return here.
+    // Otherwise
     return glm::vec4(otherIso, 0.0f);
-    //Volume Shading Enabled:
 }
 
 // ======= TODO: IMPLEMENT ========
