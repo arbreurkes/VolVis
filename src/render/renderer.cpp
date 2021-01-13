@@ -193,7 +193,11 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
             //Volume Shading Enabled:
             if (m_config.volumeShading) {
                 volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
-                return glm::vec4(computePhongShading(isoColor, gradient, m_pCamera->position(), ray.direction), 1.0f);
+                glm::vec3 L = glm::normalize(samplePos - m_pCamera->position());
+                // glm::vec3 L = glm::normalize(ray.direction);
+                glm::vec3 V = glm::normalize(ray.direction);
+
+                return glm::vec4(computePhongShading(isoColor, gradient, L, V), 1.0f);
             }
 
             //Volume Shading Disabled:
@@ -281,11 +285,15 @@ glm::vec3 Renderer::computePhongShading(const glm::vec3& color, const volume::Gr
     // Surface properties.
     const glm::vec4 K { 0.1, 0.7, 0.2, 100};
     // Ambient vector.
-    const glm::vec3 ambient = color * K[0];
+    const glm::vec3 ambient = glm::vec3 { K[0] };
     // Diffuse vector.
-    const glm::vec3 diffuse = color * K[1] * glm::dot(glm::normalize(gradient.dir), glm::normalize(L));
+    const float cosTheta = glm::dot(glm::normalize(gradient.dir), glm::normalize(L));
+    const glm::vec3 diffuse = glm::vec3 { K[1] * cosTheta };
+    // // Specular vector.
+    const float cosPhi = cos(-acos(glm::dot(glm::normalize(gradient.dir), glm::normalize(V))) - acos(cosTheta));
+    const glm::vec3 specular = glm::vec3 { K[2] * pow(cosPhi, K[3]) };
 
-    return ambient + diffuse;
+    return color * (ambient + diffuse + specular);
 }
 
 // ======= DO NOT MODIFY THIS FUNCTION ========
