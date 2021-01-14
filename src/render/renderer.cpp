@@ -236,7 +236,8 @@ float a(float val, float delta) {
 // Use getTFValue to compute the color for a given volume value according to the 1D transfer function.
 glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
 {
-    float absorption = 0.0f;
+    float opacity = 0.0f;
+
     glm::vec4 color = {0.0f, 0.0f, 0.0f, 0.0f};
 
     // Incrementing samplePos directly instead of recomputing it each frame gives a measureable speed-up.
@@ -244,15 +245,13 @@ glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
     const glm::vec3 increment = sampleStep * ray.direction;
     for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
         const float val = m_pVolume->getVoxelInterpolate(samplePos);
-
-        color = color + getTFValue(val) * sampleStep * (1 - absorption);
-        
         // Not sure on how to set the initial absorption...
-        if (absorption == 0.0f) {
-            absorption = 1 * (1 - a(val, sampleStep));
+        if (t == ray.tmin) {
+            opacity =  exp(- val * sampleStep);
         } else {
-            absorption = absorption * (1 - a(val, sampleStep));
+            opacity = opacity * exp(- val * sampleStep);
         }
+        color = color + getTFValue(val) * sampleStep * (opacity);
     }
     return color;
 }
