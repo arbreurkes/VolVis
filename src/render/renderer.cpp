@@ -261,7 +261,31 @@ glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
 // Use the getTF2DOpacity function that you implemented to compute the opacity according to the 2D transfer function.
 glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
 {
-    return glm::vec4(0.0f);
+    
+    // float opacity = 0.0f;
+
+    glm::vec3 color = {1.0f, 0.0f, 0.0f};
+    static constexpr glm::vec4 other { 0.0f, 0.0f, 0.0f, 0.0f }; //Black
+
+    // Incrementing samplePos directly instead of recomputing it each frame gives a measureable speed-up.
+    glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
+    const glm::vec3 increment = sampleStep * ray.direction;
+    for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
+        const float val = m_pVolume->getVoxelInterpolate(samplePos);
+
+        // Calculate gradient
+        volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
+        glm::vec3 L = glm::normalize(samplePos - m_pCamera->position());
+        float cosTheta = glm::dot(glm::normalize(gradient.dir), glm::normalize(L));
+        // 
+
+        float O = getTF2DOpacity(val, cosTheta);
+        if (O > 0.0f) {
+            return glm::vec4(color, 0.3f);
+        }
+    }
+
+    return other;
 }
 
 // ======= TODO: IMPLEMENT ========
@@ -307,6 +331,29 @@ glm::vec4 Renderer::getTFValue(float val) const
 // The 2D transfer function settings can be accessed through m_config.TF2DIntensity and m_config.TF2DRadius.
 float Renderer::getTF2DOpacity(float intensity, float gradientMagnitude) const
 {
+    float I = m_config.TF2DIntensity;
+    float R = m_config.TF2DRadius;
+
+    gradientMagnitude = fabs(gradientMagnitude);
+    
+    if (intensity <= I) {
+        // Are we in the triangle? Left
+        if (gradientMagnitude >= 1.0f - (R/2.0f/I) * (intensity - (I - R/2.0f))) {
+            // IN
+
+            return 0.5f;
+            // return 1.0f - ( (I - intensity) / (gradientMagnitude * R/2.0f) );
+        }
+    } else {
+        // Are we in the triangle? Right
+        if (gradientMagnitude >= (R/2.0f/I) * (intensity - I)) {
+            // IN
+            return 0.5f;
+
+            // return 1.0f - ( (intensity - I) / (gradientMagnitude * R/2.0f) );
+        }
+    }
+    // Out
     return 0.0f;
 }
 
