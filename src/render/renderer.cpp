@@ -266,7 +266,7 @@ glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
 
     glm::vec3 color = {1.0f, 0.0f, 0.0f};
     static constexpr glm::vec4 other { 0.0f, 0.0f, 0.0f, 0.0f }; //Black
-
+    float max = 0.0f;
     // Incrementing samplePos directly instead of recomputing it each frame gives a measureable speed-up.
     glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
     const glm::vec3 increment = sampleStep * ray.direction;
@@ -279,13 +279,13 @@ glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
         float cosTheta = glm::dot(glm::normalize(gradient.dir), glm::normalize(L));
         // 
 
-        float O = getTF2DOpacity(val, cosTheta);
-        if (O > 0.0f) {
-            return glm::vec4(color, 0.3f);
-        }
+        max = std::max(max, getTF2DOpacity(val, cosTheta));
+        // if (O > 0.0f) {
+        //     return m_config.TF2DColor * O;
+        // }
     }
 
-    return other;
+    return m_config.TF2DColor * max;
 }
 
 // ======= TODO: IMPLEMENT ========
@@ -341,16 +341,16 @@ float Renderer::getTF2DOpacity(float intensity, float gradientMagnitude) const
         if (gradientMagnitude >= 1.0f - (R/2.0f/I) * (intensity - (I - R/2.0f))) {
             // IN
 
-            return 0.5f;
-            // return 1.0f - ( (I - intensity) / (gradientMagnitude * R/2.0f) );
+            // return 0.5f;
+            return 1.0f - ( (I - intensity) / (gradientMagnitude * R/2.0f) );
         }
     } else {
         // Are we in the triangle? Right
         if (gradientMagnitude >= (R/2.0f/I) * (intensity - I)) {
             // IN
-            return 0.5f;
+            // return 0.5f;
 
-            // return 1.0f - ( (intensity - I) / (gradientMagnitude * R/2.0f) );
+            return 1.0f - ( (intensity - I) / (gradientMagnitude * R/2.0f) );
         }
     }
     // Out
