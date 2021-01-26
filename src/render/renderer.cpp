@@ -262,9 +262,7 @@ float a(float val, float delta) {
 // Use getTFValue to compute the color for a given volume value according to the 1D transfer function.
 glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
 {
-    // float opacity = 0.0f;
-
-    // // Initialize the color-to-return vector.
+    // Initialize the color-to-return vector.
     glm::vec4 color = {0.0f, 0.0f, 0.0f, 0.0f};
     // Initialize previous ambient value (Ai+1') and color vector (Ci+1').
     glm::vec3 Ci = glm::vec3(.0f, .0f, .0f);
@@ -277,19 +275,14 @@ glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
         const float val = m_pVolume->getVoxelInterpolate(samplePos);
         
         if (val > m_config.isoValue) {
-            // Not sure on how to set the initial absorption...
-            // if (t == ray.tmin) {
-            //     opacity =  exp(- val * sampleStep);
-            // } else {
-            //     opacity = opacity * exp(- val * sampleStep);
-            // }
-
             // Get the TFValue.
             glm::vec4 tfValue = getTFValue(val);
+            
+            // For initial value
             if (t == ray.tmin) {
                 color = tfValue;
                 Ai = tfValue[3];
-            } else {
+            } else { // For all others.
                 // Get color vector Ci.
                 Ci = Ci + glm::vec3((1 - Ai) * tfValue * tfValue[3]);
                 // Calculate ambient value Ai.
