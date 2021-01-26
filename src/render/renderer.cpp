@@ -262,24 +262,45 @@ float a(float val, float delta) {
 // Use getTFValue to compute the color for a given volume value according to the 1D transfer function.
 glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
 {
-    float opacity = 0.0f;
+    // float opacity = 0.0f;
 
+    // // Initialize the color-to-return vector.
     glm::vec4 color = {0.0f, 0.0f, 0.0f, 0.0f};
+    // Initialize previous ambient value (Ai+1') and color vector (Ci+1').
+    glm::vec3 Ci = glm::vec3(.0f, .0f, .0f);
+    float Ai = std::numeric_limits<float>::min();
 
     // Incrementing samplePos directly instead of recomputing it each frame gives a measureable speed-up.
     glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
     const glm::vec3 increment = sampleStep * ray.direction;
     for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
         const float val = m_pVolume->getVoxelInterpolate(samplePos);
-        // Not sure on how to set the initial absorption...
-        if (t == ray.tmin) {
-            opacity =  exp(- val * sampleStep);
-        } else {
-            opacity = opacity * exp(- val * sampleStep);
+        
+        if (val > m_config.isoValue) {
+            // Not sure on how to set the initial absorption...
+            // if (t == ray.tmin) {
+            //     opacity =  exp(- val * sampleStep);
+            // } else {
+            //     opacity = opacity * exp(- val * sampleStep);
+            // }
+
+            // Get the TFValue.
+            glm::vec4 tfValue = getTFValue(val);
+            if (t == ray.tmin) {
+                color = tfValue;
+                Ai = tfValue[3];
+            } else {
+                // Get color vector Ci.
+                Ci = Ci + glm::vec3((1 - Ai) * tfValue * tfValue[3]);
+                // Calculate ambient value Ai.
+                Ai = Ai + (1 - Ai) * tfValue[3];
+            }
         }
-        color = color + getTFValue(val) * sampleStep * (opacity);
+
+        // If too opaque, no further surface can be seen, stop calculating.
+        if (Ai >= 0.95f) break;
     }
-    return color;
+    return color + glm::vec4(Ci, Ai);
 }
 
 // ======= TODO: IMPLEMENT ========
@@ -287,7 +308,6 @@ glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
 // Use the getTF2DOpacity function that you implemented to compute the opacity according to the 2D transfer function.
 glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
 {
-    
     // float opacity = 0.0f;
     static constexpr glm::vec4 other { 0.0f, 0.0f, 0.0f, 0.0f }; //Black
     float max = 0.0f;
