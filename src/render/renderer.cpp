@@ -190,6 +190,11 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
         maxVal = std::max(val, maxVal);
         
         if (maxVal > m_config.isoValue) {
+            // Get t adjusted for bisection accuracy.
+            float tBA = bisectionAccuracy(ray, t - sampleStep * 0.5f, t, m_config.isoValue);
+            // Get the sample position that corresponds to this t value.
+            samplePos = ray.origin + tBA * ray.direction;
+
             //Volume Shading Enabled:
             if (m_config.volumeShading) {
                 volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
@@ -216,21 +221,31 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
 float Renderer::bisectionAccuracy(const Ray& ray, float t0, float t1, float isoValue) const
 {
     //Declarations
-    float sampleStep = 0.001f;
-    float minVal = 0.0f;
+    float sampleStep = 0.1f;
+    float minVal = std::numeric_limits<float>::max();
+    float argMin = t0;
 
     glm::vec3 samplePos = ray.origin + t0 * ray.direction;
     const glm::vec3 increment = sampleStep * ray.direction;
 
     for (float t = t0; t <= t1; t += sampleStep, samplePos += increment) {
-        const float val = abs(m_pVolume->getVoxelInterpolate(samplePos) - isoValue);
-        minVal = std::min(val, minVal);
+        const float val = fabs(m_pVolume->getVoxelInterpolate(samplePos) - isoValue);
+
+        if (val < minVal) {
+            minVal = val;
+            argMin = t;
+
+            if (fabs(minVal - isoValue) < 0.01) return argMin;
+        }
     }
-    //return the t corresponding to the minVal
+    
+    return argMin;
 }
+
 float a(float val, float delta) {
     return exp(-val*delta);
 }
+
 // ======= TODO: IMPLEMENT ========
 // In this function, implement 1D transfer function raycasting.
 // Use getTFValue to compute the color for a given volume value according to the 1D transfer function.
