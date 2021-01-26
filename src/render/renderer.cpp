@@ -262,8 +262,6 @@ float a(float val, float delta) {
 // Use getTFValue to compute the color for a given volume value according to the 1D transfer function.
 glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
 {
-    // Initialize the color-to-return vector.
-    glm::vec4 color = {0.0f, 0.0f, 0.0f, 0.0f};
     // Initialize previous ambient value (Ai+1') and color vector (Ci+1').
     glm::vec3 Ci = glm::vec3(.0f, .0f, .0f);
     float Ai = std::numeric_limits<float>::min();
@@ -280,8 +278,8 @@ glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
             
             // For initial value
             if (t == ray.tmin) {
-                color = tfValue;
                 Ai = tfValue[3];
+                Ci = tfValue * Ai;
             } else { // For all others.
                 // Get color vector Ci.
                 Ci = Ci + glm::vec3((1 - Ai) * tfValue * tfValue[3]);
@@ -293,7 +291,8 @@ glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
         // If too opaque, no further surface can be seen, stop calculating.
         if (Ai >= 0.95f) break;
     }
-    return color + glm::vec4(Ci, Ai);
+
+    return glm::vec4(Ci, Ai);
 }
 
 // ======= TODO: IMPLEMENT ========
@@ -301,24 +300,41 @@ glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
 // Use the getTF2DOpacity function that you implemented to compute the opacity according to the 2D transfer function.
 glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
 {
-    // float opacity = 0.0f;
-    static constexpr glm::vec4 other { 0.0f, 0.0f, 0.0f, 0.0f }; //Black
-    float max = 0.0f;
+    // Initialize previous ambient value (Ai+1') and color vector (Ci+1').
+    glm::vec3 Ci = glm::vec3(.0f, .0f, .0f);
+    float Ai = std::numeric_limits<float>::min();
+
     // Incrementing samplePos directly instead of recomputing it each frame gives a measureable speed-up.
     glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
     const glm::vec3 increment = sampleStep * ray.direction;
     for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
         const float val = m_pVolume->getVoxelInterpolate(samplePos);
+        
+        if (val > m_config.isoValue) {
+            // Calculate gradient
+            volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
+            // Calculate normalized magnitude
+            const float gradientMagnitude = fabs(gradient.magnitude) / m_pGradientVolume->maxMagnitude();
+            
+            // Get opacity in this point t.
+            const float tA = getTF2DOpacity(val, gradientMagnitude);
+            // For initial value
+            if (t == ray.tmin) {
+                Ai = tA;
+                Ci = glm::vec3(m_config.TF2DColor) * tA;
+            } else { // For all others.
+                // Get color vector Ci.
+                Ci = Ci + glm::vec3((1 - Ai) * m_config.TF2DColor * tA);
+                // Calculate ambient value Ai.
+                Ai = Ai + (1 - Ai) * tA;
+            }
+        }
 
-        // Calculate gradient
-        volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
-        glm::vec3 L = glm::normalize(samplePos - m_pCamera->position());
-        float cosTheta = glm::dot(glm::normalize(gradient.dir), glm::normalize(L));
-        // 
-        max = std::max(max, getTF2DOpacity(val, cosTheta));
+        // If too opaque, no further surface can be seen, stop calculating.
+        if (Ai >= 0.95f) break;
     }
 
-    return m_config.TF2DColor * max;
+    return glm::vec4(Ci, Ai);
 }
 
 // ======= TODO: IMPLEMENT ========
@@ -367,23 +383,41 @@ float Renderer::getTF2DOpacity(float intensity, float gradientMagnitude) const
     float I = m_config.TF2DIntensity;
     float R = m_config.TF2DRadius;
 
-    gradientMagnitude = fabs(gradientMagnitude);
-    
     if (intensity <= I) {
         // Are we in the triangle? Left
-        if (gradientMagnitude >= 1.0f - (R/2.0f/I) * (intensity - (I - R/2.0f))) {
+        if (gradientMagnitude >= 1.0f - (1 / R / 2.0f) * (intensity - (I - R / 2.0f))) {
             // IN
-            return 1.0f - ( (I - intensity) / (gradientMagnitude * R/2.0f) );
+            return 1.0f - (I - intensity) / (gradientMagnitude * R / 2.0f);
         }
     } else {
         // Are we in the triangle? Right
-        if (gradientMagnitude >= (R/2.0f/I) * (intensity - I)) {
+        if (gradientMagnitude >= (1 / R / 2.0f) * (intensity - I)) {
             // IN
-            return 1.0f - ( (intensity - I) / (gradientMagnitude * R/2.0f) );
+            return 1.0f - (intensity - I) / (gradientMagnitude * R / 2.0f);
         }
     }
     // Out
     return 0.0f;
+
+    // auto y = [](float x, glm::vec2 I, glm::vec2 R) {
+    //     return (R[1] / (R[0] - I[0])) * x - R[1];
+    // };
+    
+    // if (intensity <= I) {
+    //     // Are we in the triangle? Left
+    //     if (gradientMagnitude >= y(intensity, glm::vec2(I, 0), glm::vec2(I - R / 2.0f, 1))) {
+    //         // IN
+    //         return 1.0f - (I - intensity) / (gradientMagnitude * R / 2.0f);
+    //     }
+    // } else {
+    //     // Are we in the triangle? Right
+    //     if (gradientMagnitude >= y(intensity, glm::vec2(I, 0), glm::vec2(I + R / 2.0f, 1))) {
+    //         // IN
+    //         return 1.0f - (intensity - I) / (gradientMagnitude * R / 2.0f);
+    //     }
+    // }
+    // // Out
+    // return 0.0f;
 }
 
 // This function computes if a ray intersects with the axis-aligned bounding box around the volume.
