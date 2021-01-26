@@ -190,8 +190,19 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
         maxVal = std::max(val, maxVal);
         
         if (maxVal > m_config.isoValue) {
-            // Get t adjusted for bisection accuracy.
-            float tBA = bisectionAccuracy(ray, t - sampleStep * 0.5f, t, m_config.isoValue);
+            // Initialize variable for t adjusted for bisection accuracy.
+            float tBA = t;
+            // Get value half a step back
+            const float halfStepVal = m_pVolume->getVoxelInterpolate(ray.origin + (t - 0.5f * sampleStep) * ray.direction);
+            // If halfStepVal > isoValue -> look left of halfStep, otherwise right of it.
+            if (halfStepVal > m_config.isoValue) {
+                // Get t adjusted for bisection accuracy.
+                tBA = bisectionAccuracy(ray, t - sampleStep, t - sampleStep * 0.5f, m_config.isoValue);
+            } else {
+                // Get t adjusted for bisection accuracy.
+                tBA = bisectionAccuracy(ray, t - sampleStep * 0.5f, t, m_config.isoValue);
+            }
+
             // Get the sample position that corresponds to this t value.
             samplePos = ray.origin + tBA * ray.direction;
 
