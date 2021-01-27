@@ -310,7 +310,7 @@ glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
     for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
         const float val = m_pVolume->getVoxelInterpolate(samplePos);
         
-        if (val > m_config.isoValue) {
+        // if (val > m_config.isoValue) {
             // Calculate gradient
             volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
             // Calculate normalized magnitude
@@ -328,7 +328,7 @@ glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
                 // Calculate ambient value Ai.
                 Ai = Ai + (1 - Ai) * tA;
             }
-        }
+        // }
 
         // If too opaque, no further surface can be seen, stop calculating.
         if (Ai >= 0.95f) break;
@@ -397,15 +397,17 @@ float Renderer::getTF2DOpacity(float intensity, float gradientMagnitude) const
         const float vY = y(intensity, glm::vec2(I, 0), glm::vec2(I - R / 2.0f, 1));
         // Are we in the triangle? Left
         if (gradientMagnitude >= vY) {
+            const float vX = y(gradientMagnitude, glm::vec2(0, 0), glm::vec2(1, R / 2));
             // IN
-            return 1.0f - vY;
+            return 1.0f - fabs(I - intensity) / vX;
         }
     } else if (intensity >= I && intensity <= I + R / 2.0f) {
         const float vY = y(intensity, glm::vec2(I, 0), glm::vec2(I + R / 2.0f, 1));
         // Are we in the triangle? Right
         if (gradientMagnitude >= vY) {
+            const float vX = y(gradientMagnitude, glm::vec2(0, 0), glm::vec2(1, R / 2));
             // IN
-            return 1.0f - vY;
+            return 1.0f - fabs(I - intensity) / vX;
         }
     }
     // Out
