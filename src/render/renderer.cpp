@@ -317,7 +317,7 @@ glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
             const float gradientMagnitude = fabs(gradient.magnitude) / m_pGradientVolume->maxMagnitude();
             
             // Get opacity in this point t.
-            const float tA = getTF2DOpacity(val, gradientMagnitude);
+            const float tA = getTF2DOpacity(val, gradientMagnitude) * m_config.TF2DColor[3];
             // For initial value
             if (t == ray.tmin) {
                 Ai = tA;
@@ -383,41 +383,33 @@ float Renderer::getTF2DOpacity(float intensity, float gradientMagnitude) const
     float I = m_config.TF2DIntensity;
     float R = m_config.TF2DRadius;
 
-    if (intensity <= I) {
+    // Get the function for the directional vector R - I.
+    auto y = [](float x, glm::vec2 I, glm::vec2 R) {
+        const float dx = I[0] - R[0];
+        const float dy = I[1] - R[1];
+        const float dxdy = dy / dx;
+        const float b = I[1] - dxdy * I[0];
+
+        return dxdy * x + b;
+    };
+    
+    if (intensity <= I && intensity >= I - R / 2.0f) {
+        const float vY = y(intensity, glm::vec2(I, 0), glm::vec2(I - R / 2.0f, 1));
         // Are we in the triangle? Left
-        if (gradientMagnitude >= 1.0f - (1 / R / 2.0f) * (intensity - (I - R / 2.0f))) {
+        if (gradientMagnitude >= vY) {
             // IN
-            return 1.0f - (I - intensity) / (gradientMagnitude * R / 2.0f);
+            return 1.0f - vY;
         }
-    } else {
+    } else if (intensity >= I && intensity <= I + R / 2.0f) {
+        const float vY = y(intensity, glm::vec2(I, 0), glm::vec2(I + R / 2.0f, 1));
         // Are we in the triangle? Right
-        if (gradientMagnitude >= (1 / R / 2.0f) * (intensity - I)) {
+        if (gradientMagnitude >= vY) {
             // IN
-            return 1.0f - (intensity - I) / (gradientMagnitude * R / 2.0f);
+            return 1.0f - vY;
         }
     }
     // Out
     return 0.0f;
-
-    // auto y = [](float x, glm::vec2 I, glm::vec2 R) {
-    //     return (R[1] / (R[0] - I[0])) * x - R[1];
-    // };
-    
-    // if (intensity <= I) {
-    //     // Are we in the triangle? Left
-    //     if (gradientMagnitude >= y(intensity, glm::vec2(I, 0), glm::vec2(I - R / 2.0f, 1))) {
-    //         // IN
-    //         return 1.0f - (I - intensity) / (gradientMagnitude * R / 2.0f);
-    //     }
-    // } else {
-    //     // Are we in the triangle? Right
-    //     if (gradientMagnitude >= y(intensity, glm::vec2(I, 0), glm::vec2(I + R / 2.0f, 1))) {
-    //         // IN
-    //         return 1.0f - (intensity - I) / (gradientMagnitude * R / 2.0f);
-    //     }
-    // }
-    // // Out
-    // return 0.0f;
 }
 
 // This function computes if a ray intersects with the axis-aligned bounding box around the volume.
