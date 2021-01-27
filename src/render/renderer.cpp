@@ -314,7 +314,7 @@ glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
             // Calculate gradient
             volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
             // Calculate normalized magnitude
-            const float gradientMagnitude = fabs(gradient.magnitude) / m_pGradientVolume->maxMagnitude();
+            const float gradientMagnitude = fabs(gradient.magnitude) / (m_pGradientVolume->maxMagnitude() - m_pGradientVolume->minMagnitude());
             
             // Get opacity in this point t.
             const float tA = getTF2DOpacity(val, gradientMagnitude) * m_config.TF2DColor[3];
