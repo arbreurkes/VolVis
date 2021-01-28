@@ -210,10 +210,15 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
             if (m_config.volumeShading) {
                 volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
                 glm::vec3 L = glm::normalize(samplePos - m_pCamera->position());
-                // glm::vec3 L = glm::normalize(ray.direction);
                 glm::vec3 V = glm::normalize(ray.direction);
 
                 return glm::vec4(computePhongShading(isoColor, gradient, L, V), 1.0f);
+            } else if (m_config.toneShading) {
+                volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
+                glm::vec3 L = glm::normalize(samplePos - m_pCamera->position());
+                glm::vec3 V = glm::normalize(ray.direction);
+
+                return glm::vec4(computeToneShading(isoColor, gradient, L, V), 1.0f);
             }
 
             //Volume Shading Disabled:
@@ -356,6 +361,23 @@ glm::vec3 Renderer::computePhongShading(const glm::vec3& color, const volume::Gr
     const glm::vec3 specular = glm::vec3 { K[2] * pow(cosPhi, K[3]) };
 
     return color * (ambient + diffuse + specular);
+}
+
+glm::vec3 Renderer::computeToneShading(const glm::vec3& color, const volume::GradientVoxel& gradient, const glm::vec3& L, const glm::vec3& V)
+{
+    // Alpha
+    const float alpha = 0.2f;
+    // Beta
+    const float beta = 0.6f;
+    // kCold.
+    const glm::vec3 kCool = alpha * color + glm::vec3(0, 0, color[2]);
+    // kWarm.
+    const glm::vec3 kWarm = beta * color + glm::vec3(color[0], color[1], 0);
+    // Cosine term.
+    const float cosTheta = glm::dot(glm::normalize(gradient.dir), glm::normalize(L));
+
+    // Return the final tone shaded value.
+    return ((1 + cosTheta) / 2) * kCool + (1 - (1 + cosTheta) / 2) * kWarm;
 }
 
 // ======= DO NOT MODIFY THIS FUNCTION ========
