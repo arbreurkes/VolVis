@@ -130,19 +130,21 @@ void Menu::showRayCastTab(std::chrono::duration<double> renderTime)
         ImGui::RadioButton("Slicer", pRenderModeInt, int(render::RenderMode::RenderSlicer));
         ImGui::RadioButton("MIP", pRenderModeInt, int(render::RenderMode::RenderMIP));
         ImGui::RadioButton("IsoSurface Rendering", pRenderModeInt, int(render::RenderMode::RenderIso));
+        ImGui::Indent();
+            ImGui::Text("Shading Mode (choose only one):");
+            ImGui::Checkbox("Phong Shading", &m_renderConfig.volumeShading);
+            ImGui::Checkbox("Tone Shading", &m_renderConfig.toneShading);
+            ImGui::Indent();
+                ImGui::DragFloat("Alpha (cool)", &m_renderConfig.alpha, 0.025f, 0.0f, 1.0f);
+                ImGui::DragFloat("Beta (warm)", &m_renderConfig.beta, 0.025f, 0.0f, 1.0f);
+            ImGui::Unindent();
+            ImGui::Checkbox("Silhouette rendering", &m_renderConfig.silhouette);
+            ImGui::Indent();
+                ImGui::DragFloat("Silhouette  epsilon", &m_renderConfig.sEpsilon, 0.0025f, 0.0f, 1.0f);
+            ImGui::Unindent();
+        ImGui::Unindent();
         ImGui::RadioButton("Compositing", pRenderModeInt, int(render::RenderMode::RenderComposite));
         ImGui::RadioButton("2D Transfer Function", pRenderModeInt, int(render::RenderMode::RenderTF2D));
-
-        ImGui::NewLine();
-
-        ImGui::Text("Shading Mode (choose only one):");
-        ImGui::Checkbox("Phong Shading", &m_renderConfig.volumeShading);
-        ImGui::Checkbox("Tone Shading", &m_renderConfig.toneShading);
-
-        ImGui::NewLine();
-
-        ImGui::Checkbox("Silhouette rendering", &m_renderConfig.silhouette);
-        ImGui::DragFloat("Silhouette  epsilon", &m_renderConfig.sEpsilon, 0.0025f, 0.0f, 1.0f);
 
         ImGui::NewLine();
 

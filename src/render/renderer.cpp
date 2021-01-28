@@ -218,13 +218,12 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
                 glm::vec3 L = glm::normalize(samplePos - m_pCamera->position());
                 glm::vec3 V = glm::normalize(ray.direction);
 
-                return glm::vec4(computeToneShading(isoColor, gradient, L, V), 1.0f);
+                return glm::vec4(computeToneShading(isoColor, gradient, L, V, m_config.alpha, m_config.beta), 1.0f);
             }  else if (m_config.silhouette) {
                 volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
-                glm::vec3 L = glm::normalize(samplePos - m_pCamera->position());
                 glm::vec3 V = glm::normalize(ray.direction);
 
-                return computeContour(isoColor, gradient, L, V, m_config.sEpsilon);
+                return glm::vec4(isoColor, 1.0f) * computeContour(gradient, V, m_config.sEpsilon);
             }
 
             //Volume Shading Disabled:
@@ -370,12 +369,8 @@ glm::vec3 Renderer::computePhongShading(const glm::vec3& color, const volume::Gr
 }
 
 // PART 4: COMPUTE TONE SHADING
-glm::vec3 Renderer::computeToneShading(const glm::vec3& color, const volume::GradientVoxel& gradient, const glm::vec3& L, const glm::vec3& V)
+glm::vec3 Renderer::computeToneShading(const glm::vec3& color, const volume::GradientVoxel& gradient, const glm::vec3& L, const glm::vec3& V, float alpha, float beta)
 {
-    // Alpha
-    const float alpha = 0.2f;
-    // Beta
-    const float beta = 0.6f;
     // kCold.
     const glm::vec3 kCool = alpha * color + glm::vec3(0, 0, color[2]);
     // kWarm.
@@ -388,16 +383,13 @@ glm::vec3 Renderer::computeToneShading(const glm::vec3& color, const volume::Gra
 }
 
 // PART 4: COMPUTE SILHOUETTE
-glm::vec4 Renderer::computeContour(const glm::vec3& color, const volume::GradientVoxel& gradient, const glm::vec3& L, const glm::vec3& V, const float epsilon)
+float Renderer::computeContour(const volume::GradientVoxel& gradient, const glm::vec3& V, const float epsilon)
 {
     // Cosine term.
     const float cosTheta = glm::dot(glm::normalize(gradient.dir), glm::normalize(V));
 
-    // Initialize color vector to return.
-    glm::vec4 toRet = glm::vec4(color, 1.0f);
-
     // Return 1 if orthogonal, 0 otherwise.
-    return cosTheta < epsilon ? toRet : toRet * .0f;
+    return cosTheta < epsilon ? 1.0f : .0f;
 }
 
 // ======= DO NOT MODIFY THIS FUNCTION ========
