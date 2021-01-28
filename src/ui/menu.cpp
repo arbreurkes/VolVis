@@ -136,8 +136,13 @@ void Menu::showRayCastTab(std::chrono::duration<double> renderTime)
         ImGui::NewLine();
 
         ImGui::Text("Shading Mode (choose only one):");
-        ImGui::Checkbox("Volume Shading", &m_renderConfig.volumeShading);
+        ImGui::Checkbox("Phong Shading", &m_renderConfig.volumeShading);
         ImGui::Checkbox("Tone Shading", &m_renderConfig.toneShading);
+
+        ImGui::NewLine();
+
+        ImGui::Checkbox("Silhouette rendering", &m_renderConfig.silhouette);
+        ImGui::DragFloat("Silhouette  epsilon", &m_renderConfig.sEpsilon, 0.0025f, 0.0f, 1.0f);
 
         ImGui::NewLine();
 

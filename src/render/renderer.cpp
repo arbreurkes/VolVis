@@ -219,6 +219,12 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
                 glm::vec3 V = glm::normalize(ray.direction);
 
                 return glm::vec4(computeToneShading(isoColor, gradient, L, V), 1.0f);
+            }  else if (m_config.silhouette) {
+                volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
+                glm::vec3 L = glm::normalize(samplePos - m_pCamera->position());
+                glm::vec3 V = glm::normalize(ray.direction);
+
+                return computeContour(isoColor, gradient, L, V, m_config.sEpsilon);
             }
 
             //Volume Shading Disabled:
@@ -363,6 +369,7 @@ glm::vec3 Renderer::computePhongShading(const glm::vec3& color, const volume::Gr
     return color * (ambient + diffuse + specular);
 }
 
+// PART 4: COMPUTE TONE SHADING
 glm::vec3 Renderer::computeToneShading(const glm::vec3& color, const volume::GradientVoxel& gradient, const glm::vec3& L, const glm::vec3& V)
 {
     // Alpha
@@ -378,6 +385,19 @@ glm::vec3 Renderer::computeToneShading(const glm::vec3& color, const volume::Gra
 
     // Return the final tone shaded value.
     return ((1 + cosTheta) / 2) * kCool + (1 - (1 + cosTheta) / 2) * kWarm;
+}
+
+// PART 4: COMPUTE SILHOUETTE
+glm::vec4 Renderer::computeContour(const glm::vec3& color, const volume::GradientVoxel& gradient, const glm::vec3& L, const glm::vec3& V, const float epsilon)
+{
+    // Cosine term.
+    const float cosTheta = glm::dot(glm::normalize(gradient.dir), glm::normalize(V));
+
+    // Initialize color vector to return.
+    glm::vec4 toRet = glm::vec4(color, 1.0f);
+
+    // Return 1 if orthogonal, 0 otherwise.
+    return cosTheta < epsilon ? toRet : toRet * .0f;
 }
 
 // ======= DO NOT MODIFY THIS FUNCTION ========

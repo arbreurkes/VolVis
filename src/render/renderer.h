@@ -48,6 +48,7 @@ protected:
 
     static glm::vec3 computePhongShading(const glm::vec3& color, const volume::GradientVoxel& gradient, const glm::vec3& lightDirection, const glm::vec3& viewDirection);
     static glm::vec3 computeToneShading(const glm::vec3& color, const volume::GradientVoxel& gradient, const glm::vec3& lightDirection, const glm::vec3& viewDirection);
+    static glm::vec4 computeContour(const glm::vec3& color, const volume::GradientVoxel& gradient, const glm::vec3& lightDirection, const glm::vec3& viewDirection, float epsilon);
 
 private:
     void resizeImage(const glm::ivec2& resolution);

@@ -20,6 +20,8 @@ struct RenderConfig {
 
     bool volumeShading { false };
     bool toneShading { false };
+    bool silhouette { false };
+    float sEpsilon { .25f };
     float isoValue { 95.0f };
 
     // 1D transfer function.
