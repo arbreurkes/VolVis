@@ -310,25 +310,23 @@ glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
     for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
         const float val = m_pVolume->getVoxelInterpolate(samplePos);
         
-        // if (val > m_config.isoValue) {
-            // Calculate gradient
-            volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
-            // Calculate normalized magnitude
-            const float gradientMagnitude = fabs(gradient.magnitude) / (m_pGradientVolume->maxMagnitude() - m_pGradientVolume->minMagnitude());
-            
-            // Get opacity in this point t.
-            const float tA = getTF2DOpacity(val, gradientMagnitude) * m_config.TF2DColor[3];
-            // For initial value
-            if (t == ray.tmin) {
-                Ai = tA;
-                Ci = glm::vec3(m_config.TF2DColor) * tA;
-            } else { // For all others.
-                // Get color vector Ci.
-                Ci = Ci + glm::vec3((1 - Ai) * m_config.TF2DColor * tA);
-                // Calculate ambient value Ai.
-                Ai = Ai + (1 - Ai) * tA;
-            }
-        // }
+        // Calculate gradient
+        volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
+        // Calculate normalized magnitude
+        const float gradientMagnitude = fabs(gradient.magnitude) / (m_pGradientVolume->maxMagnitude() - m_pGradientVolume->minMagnitude());
+        
+        // Get opacity in this point t.
+        const float tA = getTF2DOpacity(val, gradientMagnitude) * m_config.TF2DColor[3];
+        // For initial value
+        if (t == ray.tmin) {
+            Ai = tA;
+            Ci = glm::vec3(m_config.TF2DColor) * tA;
+        } else { // For all others.
+            // Get color vector Ci.
+            Ci = Ci + glm::vec3((1 - Ai) * m_config.TF2DColor * tA);
+            // Calculate ambient value Ai.
+            Ai = Ai + (1 - Ai) * tA;
+        }
 
         // If too opaque, no further surface can be seen, stop calculating.
         if (Ai >= 0.95f) break;
