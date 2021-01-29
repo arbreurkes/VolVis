@@ -180,16 +180,14 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
     // Declarations
     static constexpr glm::vec3 isoColor { 0.8f, 0.8f, 0.2f }; //Yellow
     static constexpr glm::vec3 otherIso { 0.0f, 0.0f, 0.0f }; //Black
-    float maxVal = 0.0f;
 
     // Loop through every values of the ray every sampleStep and find the max
     glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
     const glm::vec3 increment = sampleStep * ray.direction;
     for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
         const float val = m_pVolume->getVoxelInterpolate(samplePos);
-        maxVal = std::max(val, maxVal);
         
-        if (maxVal > m_config.isoValue) {
+        if (val > m_config.isoValue) {
             // Initialize variable for t adjusted for bisection accuracy.
             float tBA = t;
             // Get value half a step back
