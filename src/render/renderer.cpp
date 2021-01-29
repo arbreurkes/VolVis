@@ -284,11 +284,19 @@ glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
             // Get the TFValue.
             glm::vec4 tfValue = getTFValue(val);
             
-            // For initial value
-            if (t == ray.tmin) {
-                Ai = tfValue[3];
-                Ci = tfValue * Ai;
-            } else { // For all others.
+            if (m_config.phongShading) { // If we want phong shading.
+                volume::GradientVoxel gradient = m_pGradientVolume->getGradientVoxel(samplePos);
+                glm::vec3 L = glm::normalize(samplePos - m_pCamera->position());
+                glm::vec3 V = glm::normalize(ray.direction);
+
+                // If the gradient magnitude is 0, carry on to next sample.
+                if (gradient.magnitude < 0.0001f) continue;
+
+                // Get color vector Ci.
+                Ci = Ci + (1 - Ai) * computePhongShading(tfValue, gradient, L, V) * tfValue[3];
+                // Calculate ambient value Ai.
+                Ai = Ai + (1 - Ai) * tfValue[3];
+            } else { // If we don't want phong shading.
                 // Get color vector Ci.
                 Ci = Ci + glm::vec3((1 - Ai) * tfValue * tfValue[3]);
                 // Calculate ambient value Ai.
@@ -325,16 +333,11 @@ glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
         
         // Get opacity in this point t.
         const float tA = getTF2DOpacity(val, gradientMagnitude) * m_config.TF2DColor[3];
-        // For initial value
-        if (t == ray.tmin) {
-            Ai = tA;
-            Ci = glm::vec3(m_config.TF2DColor) * tA;
-        } else { // For all others.
-            // Get color vector Ci.
-            Ci = Ci + glm::vec3((1 - Ai) * m_config.TF2DColor * tA);
-            // Calculate ambient value Ai.
-            Ai = Ai + (1 - Ai) * tA;
-        }
+
+        // Get color vector Ci.
+        Ci = Ci + glm::vec3((1 - Ai) * m_config.TF2DColor * tA);
+        // Calculate ambient value Ai.
+        Ai = Ai + (1 - Ai) * tA;
 
         // If too opaque, no further surface can be seen, stop calculating.
         if (Ai >= 0.95f) break;

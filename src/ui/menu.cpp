@@ -144,6 +144,9 @@ void Menu::showRayCastTab(std::chrono::duration<double> renderTime)
             ImGui::Unindent();
         ImGui::Unindent();
         ImGui::RadioButton("Compositing", pRenderModeInt, int(render::RenderMode::RenderComposite));
+        ImGui::Indent();
+            ImGui::Checkbox("Phong shading", &m_renderConfig.phongShading);
+        ImGui::Unindent();
         ImGui::RadioButton("2D Transfer Function", pRenderModeInt, int(render::RenderMode::RenderTF2D));
 
         ImGui::NewLine();

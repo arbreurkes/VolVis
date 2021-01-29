@@ -21,6 +21,7 @@ struct RenderConfig {
     bool volumeShading { false };
     bool toneShading { false };
     bool silhouette { false };
+    bool phongShading { false };
     float alpha { .2f };
     float beta { .6f };
     float sEpsilon { .25f };
